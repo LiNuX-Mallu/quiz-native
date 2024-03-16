@@ -4,57 +4,41 @@ import {
   Text,
   View,
   Pressable,
-  Alert,
   SafeAreaView,
   Appearance,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import Socket from './src/instances/socket';
 import Game from './src/components/Game/Game';
+import {Modal} from 'react-native';
 
 function App(): React.JSX.Element {
   const [ID, setID] = useState<string | null>(null);
   const [oppID, setOppID] = useState<string | null>(null);
   const isDark = Appearance.getColorScheme() === 'dark';
   const [socket] = useState(Socket.connect());
+  const [request, setRequest] = useState<string | null>(null);
+  const [requestFriend, setRequestFriend] = useState<string | boolean>(false);
+  const [alert, setAlert] = useState<number | null>(null);
+  const [searching, setSearching] = useState('none');
 
   function receiveID(id: string) {
-    setID(id);
+    setID(id.toString());
   }
 
-  const receiveAlert = useCallback(function (code: number) {
-    let text: string;
-    switch (code) {
-      case 404:
-        text = 'Invalid ID';
-        break;
-      default:
-        text = 'Something went wrong';
-    }
-    Alert.alert(text);
+  const receiveAlert = useCallback((code: number) => {
+    setAlert(code);
   }, []);
 
   const receiveRequest = useCallback(
     (id: string) => {
-      if (ID === null || id === ID || oppID !== null) {
+      if (ID === null || id.toString() === ID || oppID !== null) {
         return undefined;
       }
-      Alert.alert('Request', 'Someone looking for a partner', [
-        {
-          text: 'Reject',
-          onPress: () => setOppID(null),
-          style: 'cancel',
-        },
-        {
-          text: 'Accept',
-          onPress: () => {
-            socket.emit('acceptRequest', {from: ID, to: id});
-            setOppID(id);
-          },
-        },
-      ]);
+      setRequest(id.toString());
     },
-    [ID, socket, oppID],
+    [ID, oppID],
   );
 
   useEffect(() => {
@@ -78,27 +62,29 @@ function App(): React.JSX.Element {
     };
   }, [socket, ID, receiveAlert, receiveRequest]);
 
+  const receiveAcceptance = useCallback((id: string) => {
+    if (id.toString() === ID) {
+      return undefined;
+    }
+    socket.off('receiveAccept', receiveAcceptance);
+    setSearching('none');
+    requestFriend && setRequestFriend(false);
+    request && setRequest(null);
+    setOppID(id);
+  }, [ID, socket, request, requestFriend]);
+
   const sendRequest = (friend: string | null) => {
+    setSearching(friend ? 'friend' : 'random');
+    setRequest(null);
     if (oppID) {
       return undefined;
     }
-
-    async function receiveAcceptance(id: string) {
-      if (id === ID) {
-        return undefined;
-      }
-      setOppID(id);
-      socket.off('receiveAccept', receiveAcceptance);
-    }
-
     socket.on('receiveAccept', receiveAcceptance);
-    socket.emit('sendRequest', { ID, friend });
+    socket.emit('sendRequest', {ID, friend});
   };
 
   if (oppID !== null && ID !== null) {
-    return (
-      <Game socket={socket} setOppID={setOppID} oppID={oppID} ID={ID} />
-    );
+    return <Game socket={socket} setOppID={setOppID} oppID={oppID} ID={ID} />;
   }
 
   return (
@@ -114,24 +100,204 @@ function App(): React.JSX.Element {
         )}
       </Pressable>
       <View style={homeStyles.buttons}>
-        <Pressable style={({pressed}) => [
-          {
-            ...homeStyles.btn,
-            backgroundColor: pressed ? '#2788af5e' : '#2789af',
-          },
-        ]}>
+        <Pressable
+          onPress={() => setRequestFriend(true)}
+          style={({pressed}) => [
+            {
+              ...homeStyles.btn,
+              backgroundColor: pressed ? '#2788af5e' : '#2789af',
+            },
+          ]}>
           <Text style={homeStyles.btntext}>Play with a friend</Text>
         </Pressable>
         <Text style={{textAlign: 'center', fontWeight: '500'}}>OR</Text>
-        <Pressable onPress={() => sendRequest(null)} style={({pressed}) => [
-          {
-            ...homeStyles.btn,
-            backgroundColor: pressed ? '#1c941c4b' : '#1c941c',
-          },
-        ]}>
-          <Text style={homeStyles.btntext}>Play with random player</Text>
+        <Pressable
+          onPress={() => sendRequest(null)}
+          style={({pressed}) => [
+            {
+              ...homeStyles.btn,
+              backgroundColor: pressed ? '#1c941c4b' : '#1c941c',
+            },
+          ]}>
+          <Text style={homeStyles.btntext}>{searching === 'random' ? 'Searching for players' : 'Play with random player'}</Text>
+          {searching === 'random' && <ActivityIndicator size={16} />}
         </Pressable>
       </View>
+
+      {/* Modal for play with friend */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={requestFriend !== false}
+        onRequestClose={() => {
+          setRequestFriend(false);
+          setAlert(null);
+          setSearching('none');
+          }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#e9e9e9bc',
+          }}>
+          <View
+            style={{
+              width: '85%',
+              minHeight: '20%',
+              backgroundColor: '#131313',
+              borderRadius: 5,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 30,
+              gap: 20,
+              overflow: 'hidden',
+            }}>
+            {alert === 404 && <Text style={{color: 'red'}}>Invalid ID provided!</Text>}
+            {alert !== 404 && searching === 'friend' &&
+            <View style={{
+              width: '100%',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+            }}>
+              <Text style={{fontSize: 16}}>Waiting friend to accept request</Text>
+              <ActivityIndicator size={16} />
+            </View>}
+            <TextInput
+              style={{
+                width: '100%',
+                fontSize: 16,
+              }}
+              placeholder="Enter ID here"
+              keyboardType="number-pad"
+              onChangeText={setRequestFriend}
+              value={typeof requestFriend === 'string' ? requestFriend : ''}
+            />
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: '100%',
+                justifyContent: 'space-evenly',
+                gap: 10,
+              }}>
+              <Pressable
+                onPress={() => {
+                  setRequestFriend(false);
+                  setAlert(null);
+                  setSearching('none');
+                }}
+                style={({pressed}) => [
+                  {
+                    backgroundColor: pressed ? '#80808073' : '#5f5f5f',
+                    padding: 5,
+                    borderRadius: 3,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                  },
+                ]}>
+                <Text style={{fontSize: 17, width: 90, textAlign: 'center'}}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setAlert(null);
+                  sendRequest(typeof requestFriend === 'string' ? requestFriend : '404');
+                }}
+                style={({pressed}) => [
+                  {
+                    backgroundColor: pressed ? '#0f6191ae' : '#2467b4',
+                    padding: 5,
+                    borderRadius: 3,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                  },
+                ]}>
+                <Text style={{fontSize: 17, width: 90, textAlign: 'center'}}>
+                  Request
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal for request */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={request !== null}
+        onRequestClose={() => setRequest(null)}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#e9e9e9bc',
+          }}>
+          <View
+            style={{
+              width: '85%',
+              height: '30%',
+              backgroundColor: '#131313',
+              borderRadius: 5,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 30,
+            }}>
+            <Text style={{fontSize: 30, textAlign: 'center'}}>Request</Text>
+            <Text style={{fontSize: 15, textAlign: 'center'}}>
+              Someone looking for a pair!
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: '100%',
+                justifyContent: 'space-evenly',
+                gap: 10,
+              }}>
+              <Pressable
+                onPress={() => setRequest(null)}
+                style={({pressed}) => [
+                  {
+                    backgroundColor: pressed ? '#dd3d3d8f' : '#dd3d3d',
+                    padding: 5,
+                    borderRadius: 3,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                  },
+                ]}>
+                <Text style={{fontSize: 17, width: 90, textAlign: 'center'}}>
+                  Reject
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  socket.emit('acceptRequest', {from: ID, to: request});
+                  setOppID(request);
+                  setRequest(null);
+                }}
+                style={({pressed}) => [
+                  {
+                    backgroundColor: pressed ? '#10ad1099' : '#00b900',
+                    padding: 5,
+                    borderRadius: 3,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                  },
+                ]}>
+                <Text style={{fontSize: 17, width: 90, textAlign: 'center'}}>
+                  Accept
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -162,10 +328,13 @@ const homeStyles = StyleSheet.create({
     textAlign: 'center',
     borderRadius: 5,
     color: 'white',
+    flexDirection: 'row',
+    gap: 5,
   },
   btntext: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '400',
+    fontSize: 15,
   },
 });
 

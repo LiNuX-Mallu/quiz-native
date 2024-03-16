@@ -6,9 +6,10 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
-import { Socket } from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 
 interface Props {
   oppID: string;
@@ -42,16 +43,15 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
   const gColor = '#17c717';
   const rColor = '#eb4e15';
   const dColor = '#ebebeb';
-
-  //const isDark = Appearance.getColorScheme() === 'dark';
+  const [isOver, setIsOver] = useState(false);
 
   const receiveExit = useCallback(
     (id: string) => {
-      if (id !== oppID) {
-        setOppID(null);
+      if (id === oppID) {
+        setIsOver(true);
       }
     },
-    [oppID, setOppID],
+    [oppID],
   );
 
   function receiveQuestions(qs: Question[]) {
@@ -63,33 +63,12 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
       if (!oppID || !ID) {
         return undefined;
       }
-      setScore({ opp: game[oppID].score, me: game[ID].score });
+      setScore({opp: game[oppID].score, me: game[ID].score});
       if (game[oppID].attempt === 5 || game[ID].attempt === 5) {
-        if (game[oppID].score > game[ID].score) {
-          Alert.alert('Opponent won the game', 'press ok to exit', [
-            {
-              text: 'OK',
-              onPress: () => setOppID(null),
-            },
-          ]);
-        } else if (game[oppID].score < game[ID].score) {
-          Alert.alert('You won the game', 'press ok to exit', [
-            {
-              text: 'OK',
-              onPress: () => setOppID(null),
-            },
-          ]);
-        } else {
-          Alert.alert('It\'s a draw', 'press ok to exit', [
-            {
-              text: 'OK',
-              onPress: () => setOppID(null),
-            },
-          ]);
-        }
+        setIsOver(true);
       }
     },
-    [ID, oppID, setOppID]
+    [ID, oppID],
   );
 
   useEffect(() => {
@@ -113,11 +92,11 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
     }
     if (option === questions[qIndex].answer) {
       setCorrect(option);
-      socket.emit('sendScore', { scored: true, from: ID, to: oppID });
+      socket.emit('sendScore', {scored: true, from: ID, to: oppID});
     } else {
       setWrong(option);
       setCorrect(questions[qIndex].answer);
-      socket.emit('sendScore', { scored: false, from: ID, to: oppID });
+      socket.emit('sendScore', {scored: false, from: ID, to: oppID});
     }
     if (qIndex < 4) {
       setTimeout(() => {
@@ -143,16 +122,18 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
                 text: 'Exit',
                 style: 'default',
                 onPress: () => {
+                  socket.emit('alertExit', { from: ID, to: oppID });
                   setOppID(null);
                 },
               },
             ]);
           }}
-          style={{backgroundColor: '#adadad63', borderRadius: 3}}>
+          style={{backgroundColor: '#adadad63', borderRadius: 2}}>
           <Text
             style={{
               fontSize: 16,
-              paddingLeft: 8,
+              padding: 2,
+              paddingLeft: 9,
               paddingRight: 9,
             }}>
             Exit
@@ -163,7 +144,7 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
         <Pressable
           onPress={() => {
             setStarted(true);
-            socket.emit('sendStart', { from: ID, to: oppID });
+            socket.emit('sendStart', {from: ID, to: oppID});
           }}
           style={{
             backgroundColor: '#e6e6e6',
@@ -172,7 +153,7 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
             paddingLeft: 15,
             borderRadius: 3,
           }}>
-          <Text>start</Text>
+          <Text style={{width: '25%', fontSize: 16}}>Start Game</Text>
         </Pressable>
       )}
       {questions === null && started && <ActivityIndicator size="large" />}
@@ -219,15 +200,21 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
               alignItems: 'center',
               gap: 3,
             }}>
-            <Pressable onPress={() => handleAnswer('a')} style={{
-              ...styles.option,
-              backgroundColor: correct === 'a' ? gColor : wrong === 'a' ? rColor : dColor,
+            <Pressable
+              onPress={() => handleAnswer('a')}
+              style={{
+                ...styles.option,
+                backgroundColor:
+                  correct === 'a' ? gColor : wrong === 'a' ? rColor : dColor,
               }}>
               <Text style={styles.optionText}>{questions[qIndex].a}</Text>
             </Pressable>
-            <Pressable onPress={() => handleAnswer('b')} style={{
-              ...styles.option,
-              backgroundColor: correct === 'b' ? gColor : wrong === 'b' ? rColor : dColor,
+            <Pressable
+              onPress={() => handleAnswer('b')}
+              style={{
+                ...styles.option,
+                backgroundColor:
+                  correct === 'b' ? gColor : wrong === 'b' ? rColor : dColor,
               }}>
               <Text style={styles.optionText}>{questions[qIndex].b}</Text>
             </Pressable>
@@ -239,17 +226,23 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
               alignItems: 'center',
               gap: 3,
             }}>
-            <Pressable onPress={() => handleAnswer('c')} style={{
-              ...styles.option,
-              backgroundColor: correct === 'c' ? gColor : wrong === 'c' ? rColor : dColor,
+            <Pressable
+              onPress={() => handleAnswer('c')}
+              style={{
+                ...styles.option,
+                backgroundColor:
+                  correct === 'c' ? gColor : wrong === 'c' ? rColor : dColor,
               }}>
               <Text style={styles.optionText}>{questions[qIndex].c}</Text>
             </Pressable>
-            <Pressable onPress={() => handleAnswer('d')} style={{
-              ...styles.option,
-              backgroundColor: correct === 'd' ? gColor : wrong === 'd' ? rColor : dColor,
+            <Pressable
+              onPress={() => handleAnswer('d')}
+              style={{
+                ...styles.option,
+                backgroundColor:
+                  correct === 'd' ? gColor : wrong === 'd' ? rColor : dColor,
               }}>
-              <Text style={styles.optionText}>{questions[qIndex].c}</Text>
+              <Text style={styles.optionText}>{questions[qIndex].d}</Text>
             </Pressable>
           </View>
         </View>
@@ -261,6 +254,64 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
             : 'Press start button to begin the game'}
         </Text>
       )}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isOver}
+        onRequestClose={() => setOppID(null)}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#e9e9e9bc',
+          }}>
+          <View
+            style={{
+              width: '85%',
+              height: '30%',
+              backgroundColor: '#131313',
+              borderRadius: 5,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 30,
+            }}>
+            <Text style={{
+              fontSize: 30,
+              textAlign: 'center',
+              fontWeight: '500',
+            }}>
+              {score.me > score.opp ? 'You won the Game!' : score.me === score.opp ? 'It\'s a Draw' : 'You lost the game!'}
+            </Text>
+            <Text style={{fontSize: 15, textAlign: 'center'}}>
+              {'You : ' + score.me + '   |   ' + 'Opponent : ' + score.opp}
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
+              <Pressable
+                onPress={() => setOppID(null)}
+                style={({pressed}) => [
+                  {
+                    backgroundColor: pressed ? '##bd971b' : '#bd971ba6',
+                    padding: 5,
+                    borderRadius: 3,
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                  },
+                ]}>
+                <Text style={{fontSize: 17, width: 90, textAlign: 'center'}}>
+                  Go Home
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -300,6 +351,8 @@ const styles = StyleSheet.create({
   },
   option: {
     flex: 1,
+    height: '100%',
+    width: '100%',
     padding: 12,
   },
   optionText: {
