@@ -92,7 +92,7 @@ function App(): React.JSX.Element {
       <Text style={homeStyles.title}>Quiz App</Text>
       <Pressable>
         {ID !== null ? (
-          <Text style={{color: isDark ? '#ffffff' : '#000000'}}>
+          <Text style={{color: isDark ? '#f7f7f7' : '#000000'}}>
             Your ID: {ID}
           </Text>
         ) : (
@@ -305,7 +305,7 @@ function App(): React.JSX.Element {
 //styles
 const homeStyles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161616',
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -332,7 +332,7 @@ const homeStyles = StyleSheet.create({
     gap: 5,
   },
   btntext: {
-    color: '#ffffff',
+    color: '#f5f5f5',
     fontWeight: '400',
     fontSize: 15,
   },

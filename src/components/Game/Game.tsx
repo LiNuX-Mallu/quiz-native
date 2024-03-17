@@ -42,7 +42,7 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
   const [wrong, setWrong] = useState('');
   const gColor = '#17c717';
   const rColor = '#eb4e15';
-  const dColor = '#ebebeb';
+  const dColor = '#2b2b2b';
   const [isOver, setIsOver] = useState(false);
 
   const receiveExit = useCallback(
@@ -147,7 +147,7 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
             socket.emit('sendStart', {from: ID, to: oppID});
           }}
           style={{
-            backgroundColor: '#e6e6e6',
+            backgroundColor: '#333333',
             padding: 8,
             paddingRight: 15,
             paddingLeft: 15,
@@ -318,7 +318,7 @@ function Game({oppID, ID, setOppID, socket}: Props): React.JSX.Element {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#161616',
     flex: 1,
     justifyContent: 'space-between',
     alignItems: 'center',
