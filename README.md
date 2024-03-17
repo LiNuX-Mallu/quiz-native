@@ -1,7 +1,5 @@
 # React Native Quiz App
 
-## Introduction
-
 The React Native QuizApp is designed to replicate the functionality and features of the [Web-Based QuizApp](https://github.com/LiNuX-Mallu/quizapp) while leveraging the power of React Native for native mobile development. Users can enjoy a variety of quizzes and challenge their knowledge with a friend or random player.
 
 
