@@ -1,4 +1,4 @@
-# React Native QuizApp
+# React Native Quiz App
 
 ## Introduction
 
