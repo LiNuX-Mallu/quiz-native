@@ -1,6 +1,6 @@
 # React Native QuizApp
 
-Welcome to the React Native implementation of QuizApp! This project is a cross-platform mobile application developed with React Native, based on the original [Original QuizApp](https://github.com/LiNuX-Mallu/quizapp). It aims to provide a seamless and interactive quiz experience on both Android and iOS devices.
+Welcome to the React Native implementation of [QuizApp](https://github.com/LiNuX-Mallu/quizapp)! This project is a cross-platform mobile application developed with React Native, based on the [Web-Based QuizApp](https://github.com/LiNuX-Mallu/quizapp). It aims to provide a seamless and interactive quiz experience on both Android and iOS devices.
 
 ## Introduction
 
