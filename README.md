@@ -10,9 +10,9 @@ The React Native QuizApp is designed to replicate the functionality and features
 ### Clone the repository
 
 ```bash
-git clone https://github.com/LiNuX-Mallu/quizNative.git
+git clone https://github.com/LiNuX-Mallu/quiz-native.git
 
-cd quizNative
+cd quiz-native
 ```
 
 ### Start the Metro Server
